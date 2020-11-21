@@ -14,7 +14,7 @@ This code uses AES-128 bit to encrypt files with random IV (Initialisation Vecto
   - `pip install py7zr` to install it.
 - Shutil
   - `pip install shutil` to install it. It should be pre-installed.
-***
+
 
 ## Usage:-
 ### Syntax:-
