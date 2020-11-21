@@ -154,11 +154,11 @@ Example:-
 		To decrypt a folder named secret
 
 
-    ############## CAUTION ###############
+    ################### CAUTION ####################
 
-    INCORRECT PASSWORD WILL RUIN YOUR DATA
+    INCORRECT PASSWORD WILL RUIN OR DELETE YOUR DATA
 
-    ######################################''')
+    ################################################''')
 
 
 def delete(path, filename):
