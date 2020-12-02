@@ -22,9 +22,9 @@ This code uses AES-128 bit to encrypt files with random IV (Initialisation Vecto
 `python encryptor.py <option> <filepath>`
 ### Options:-
 - `--encrypt` or `-e` to encrypt a file.
-- `--decrypt` or `-d` to decrypt a file.
 - `--encrypt-folder` or `-ef` to encrypt a folder.
-- `--decrypt-folder` or `-df` to decrypt a folder.
+- `--decrypt` or `-d` to decrypt a file or folder.
+
 ### Help:-
 `--help` or `-h` to get help.
 ### Examples:-
@@ -36,5 +36,3 @@ This code uses AES-128 bit to encrypt files with random IV (Initialisation Vecto
   - To get help
 - `encryptor.py --encrypt-folder C:\users\secret`
   - To encrypt a folder named secret
-- `encryptor.py --decrypt-folder C:\users\secret`
-  - To decrypt a folder named secret
