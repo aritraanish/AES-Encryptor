@@ -26,7 +26,7 @@ def encrypt(key, path, in_filename, chunk_size=64*1024):############### Encrypt 
 		with open(os.path.join(path, in_filename), 'rb') as infile:
 			with open(os.path.join(path, out_filename), 'wb') as outfile:
 
-				outfile.write(struct.pack('<10s Q', file_ext.encode(), filesize))#### Writting file extension and file size to the file ####
+				outfile.write(struct.pack('<10s Q 16s', file_ext.encode(), filesize, cipher.encrypt(key)))#### Writting file extension and file size to the file ####
 				outfile.write(iv)
 
 				while True:
@@ -57,9 +57,16 @@ def decrypt(key, path, in_filename, chunk_size=64*1024):############### Decrypt 
 			
 			file_ext = struct.unpack('<10s', infile.read(struct.calcsize('10s')))[0].decode('utf8').strip()####### Getting back the #######
 			origsize = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]######################## extension and file size ##########
+			key_hash = struct.unpack('<16s', infile.read(struct.calcsize('16s')))[0]
 			iv = infile.read(16)
 
 			decryptor = AES.new(key, AES.MODE_CBC, iv)
+
+			key_hash = decryptor.decrypt(key_hash)
+
+			if key != key_hash:
+				print("Incorrect password!")
+				exit()
 
 			out_filename+=file_ext
 
@@ -75,24 +82,38 @@ def decrypt(key, path, in_filename, chunk_size=64*1024):############### Decrypt 
 
 				outfile.truncate(origsize)
 
-	except :
-		print(f"Unable to decrypt, read, locate or write file {in_filename}")
+	except FileNotFoundError:
+		print(f"Unable to locate file {in_filename}")
 		exit()
+
+	except PermissionError:
+		print(f"Unable to read or write file {in_filename}")
+		exit()
+
+	except :
+		print(f"Unable to decrypt file {in_filename}")
+		exit()
+
 	
 	else:
 		print(f"Successfully decrypted file: {in_filename} to {out_filename}")
 
 
-def get_key():############################ Function to get the key ############################
+def get_key(from_encrypt=False):############################ Function to get the key ############################
 
-	print("\nCheck your password twice before entering!!!")
-	print("If the password is wrong, your data will be deleted!\n")
+	
 	key1 = input('Enter Key: ')
 
-	key2 = input('Confirm key: ')
+	if from_encrypt:
+		key2 = input('Confirm key: ')
 
-	if key1 == key2:
+		if key1 == key2:
 
+			key_hash = hashlib.scrypt(key1.encode(), salt=b'salt', n=2, r=8, p=1,  dklen=16)
+
+			return(key_hash)
+
+	else:
 		key_hash = hashlib.scrypt(key1.encode(), salt=b'salt', n=2, r=8, p=1,  dklen=16)
 
 		return(key_hash)
@@ -118,7 +139,8 @@ def extract(path, file_name):################################ Funtion to extract
 
 		print(f'Successfully unzipped {file_name}')
 	except :
-		print("Wrong password! you lost your data :)")
+		print("Unable to extract data!")
+		exit()
 
 def help():
 	print('''Help --
@@ -149,14 +171,7 @@ Example:-
 		To encrypt a folder named secret
 
 	encryptor.py --decrypt-folder C:\\users\\secret
-		To decrypt a folder named secret
-
-
-    ################### CAUTION ####################
-
-    INCORRECT PASSWORD WILL RUIN OR DELETE YOUR DATA
-
-    ################################################''')
+		To decrypt a folder named secret''')
 
 
 def delete(path, filename):
@@ -198,7 +213,7 @@ def main():
 		exit()
 
 	elif sys.argv[1] == '--encrypt' or sys.argv[1] == '-e':
-		key = get_key()
+		key = get_key(from_encrypt=True)
 
 		print("Encrypting your file...")
 		encrypt(key, path, filename)
@@ -206,7 +221,7 @@ def main():
 		exit()
 
 	elif sys.argv[1] == '--encrypt-folder' or sys.argv[1] == '-ef':
-		key = get_key()
+		key = get_key(from_encrypt=True)
 
 		print("\nZipping your files...\nPlease wait...")
 		archive(path, filename)
