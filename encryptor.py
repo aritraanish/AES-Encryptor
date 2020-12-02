@@ -62,7 +62,7 @@ def decrypt(key, path, in_filename, chunk_size=64*1024):														######## D
 			
 			file_ext = struct.unpack('<10s', infile.read(struct.calcsize('10s')))[0].decode('utf8').strip()		######## Getting back the ########
 			origsize = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]								######## extension and file size ########
-			file_or_dir = struct.unpack('<c', infile.read(struct.calcsize('c')))[0].decode('utf8')
+			file_or_dir = struct.unpack('<c', infile.read(struct.calcsize('c')))[0].decode('utf8')				######## Checking for directory or file ########
 			key_hash = struct.unpack('<16s', infile.read(struct.calcsize('16s')))[0]
 			iv = infile.read(16)
 
