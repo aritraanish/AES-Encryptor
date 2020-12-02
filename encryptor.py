@@ -7,16 +7,21 @@ import shutil
 
 
 
-def encrypt(key, path, in_filename, chunk_size=64*1024):############### Encrypt function ##################
+def encrypt(key, path, in_filename, is_dir=False, chunk_size=64*1024):											######## Encrypt function ########
 
 	out_filename = os.path.splitext(in_filename)[0] + '.lock'
 
-	iv = get_random_bytes(16)#################### Creating initial vector ###############################
+	file_or_dir = b'f'
+
+	iv = get_random_bytes(16)																					######## Creating initial vector ########
 
 	cipher = AES.new(key, AES.MODE_CBC, iv)
 
 	file_ext = os.path.splitext(in_filename)[1]
 	file_ext+= ' ' * (10 - len(file_ext) % 10)
+
+	if is_dir:
+		file_or_dir = b'd'
 
 
 	filesize = os.path.getsize(os.path.join(path, in_filename))
@@ -26,7 +31,7 @@ def encrypt(key, path, in_filename, chunk_size=64*1024):############### Encrypt 
 		with open(os.path.join(path, in_filename), 'rb') as infile:
 			with open(os.path.join(path, out_filename), 'wb') as outfile:
 
-				outfile.write(struct.pack('<10s Q 16s', file_ext.encode(), filesize, cipher.encrypt(key)))#### Writting file extension and file size to the file ####
+				outfile.write(struct.pack('<10s Q c 16s', file_ext.encode(), filesize, file_or_dir, cipher.encrypt(key)))	######## Writting file extension and file size to the file ########
 				outfile.write(iv)
 
 				while True:
@@ -46,7 +51,7 @@ def encrypt(key, path, in_filename, chunk_size=64*1024):############### Encrypt 
 	else:
 		print(f"Successfully encrypted file: {in_filename} to {out_filename}")
 
-def decrypt(key, path, in_filename, chunk_size=64*1024):############### Decrypt function ################
+def decrypt(key, path, in_filename, chunk_size=64*1024):														######## Decrypt function ########
 
 	out_filename = os.path.splitext(in_filename)[0]
 
@@ -55,8 +60,9 @@ def decrypt(key, path, in_filename, chunk_size=64*1024):############### Decrypt 
 
 		with open(os.path.join(path, in_filename), 'rb') as infile:
 			
-			file_ext = struct.unpack('<10s', infile.read(struct.calcsize('10s')))[0].decode('utf8').strip()####### Getting back the #######
-			origsize = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]######################## extension and file size ##########
+			file_ext = struct.unpack('<10s', infile.read(struct.calcsize('10s')))[0].decode('utf8').strip()		######## Getting back the ########
+			origsize = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]								######## extension and file size ########
+			file_or_dir = struct.unpack('<c', infile.read(struct.calcsize('c')))[0].decode('utf8')
 			key_hash = struct.unpack('<16s', infile.read(struct.calcsize('16s')))[0]
 			iv = infile.read(16)
 
@@ -97,12 +103,13 @@ def decrypt(key, path, in_filename, chunk_size=64*1024):############### Decrypt 
 	
 	else:
 		print(f"Successfully decrypted file: {in_filename} to {out_filename}")
+		return(file_or_dir)
 
 
-def get_key(from_encrypt=False):############################ Function to get the key ############################
+def get_key(from_encrypt=False):																				######## Function to get the key ########
 
 	
-	key1 = input('Enter Key: ')
+	key1 = input('\nEnter Key: ')
 
 	if from_encrypt:
 		key2 = input('Confirm key: ')
@@ -122,7 +129,7 @@ def get_key(from_encrypt=False):############################ Function to get the
 	exit()
 
 
-def archive(path, folder_name):############################# Function to zip the folder ###############################
+def archive(path, folder_name):																					######## Function to zip the folder ########
 	foldername = folder_name + '.7z'
 	
 	with py7zr.SevenZipFile(os.path.join(path, foldername), 'w') as archive:
@@ -131,8 +138,7 @@ def archive(path, folder_name):############################# Function to zip the
 	print(f'Successfully zipped {folder_name} to {foldername}')
 
 
-def extract(path, file_name):################################ Funtion to extract the folder
-	# filename = file_name + '.7z'
+def extract(path, file_name):																					######## Funtion to extract the folder ########
 	try:
 		with py7zr.SevenZipFile(os.path.join(path, file_name), 'r') as archive:
 			archive.extractall(path)
@@ -150,10 +156,9 @@ syntax:-
 
 option:-
 	--encrypt / -e 	:	To encrypt a file
-	--decrypt / -d 	:	To decrypt a file
 	--encrypt-folder / -ef : To encrypt a folder
-	--decrypt-folder / -df : To decrypt a folder
-
+	--decrypt / -d 	:	To decrypt a file or folder
+	
 Help:-
 	--help / -h 	    :	To get help
 
@@ -162,16 +167,13 @@ Example:-
 		To encrypt a file named secret.txt
 
 	encryptor.py --decrypt C:\\users\\secret.txt
-		To decrypt a file named secret.txt
+		To decrypt a file or folder named secret.txt
 
 	encryptor.py --help
 		To get help
 
 	encryptor.py --encrypt-folder C:\\users\\secret
-		To encrypt a folder named secret
-
-	encryptor.py --decrypt-folder C:\\users\\secret
-		To decrypt a folder named secret''')
+		To encrypt a folder named secret''')
 
 
 def delete(path, filename):
@@ -181,13 +183,13 @@ def delete(path, filename):
 		shutil.rmtree(os.path.join(path, filename))
 
 
-def main():
+def main():																										######## Main Function ########
 	if len(sys.argv) < 2:
 		help()
 		exit()
 
 
-	if sys.argv[1] == '--help' or sys.argv[1] == '-h':
+	if sys.argv[1] == '--help' or sys.argv[1] == '-h':															######## Help ########
 		help()
 		exit()
 
@@ -204,15 +206,20 @@ def main():
 
 	path, filename = os.path.split(full_path)
 
-	if sys.argv[1] == '--decrypt' or sys.argv[1] == '-d':
+	if sys.argv[1] == '--decrypt' or sys.argv[1] == '-d':														######## Decrypt ########
 		key = get_key()
 
 		print("Decrypting your file...")
-		decrypt(key, path, filename)
+		file_or_folder = decrypt(key, path, filename)
 		delete(path, filename)
+		if file_or_folder == 'd':
+			print("Unzipping files...")
+			extract(path, os.path.splitext(filename)[0]+'.7z')
+			delete(path, os.path.splitext(filename)[0]+'.7z')
+
 		exit()
 
-	elif sys.argv[1] == '--encrypt' or sys.argv[1] == '-e':
+	elif sys.argv[1] == '--encrypt' or sys.argv[1] == '-e':														######## Encrypt ########
 		key = get_key(from_encrypt=True)
 
 		print("Encrypting your file...")
@@ -220,27 +227,16 @@ def main():
 		delete(path, filename)
 		exit()
 
-	elif sys.argv[1] == '--encrypt-folder' or sys.argv[1] == '-ef':
+	elif sys.argv[1] == '--encrypt-folder' or sys.argv[1] == '-ef':												######## Encrypt Folder ########
 		key = get_key(from_encrypt=True)
 
 		print("\nZipping your files...\nPlease wait...")
 		archive(path, filename)
 		delete(path, filename)
 		print("Encrypting files...")
-		encrypt(key, path, filename + '.7z')
+		encrypt(key, path, filename + '.7z', is_dir=True)
 		delete(path, filename + '.7z')
 		exit()
-
-	elif sys.argv[1] == '--decrypt-folder' or sys.argv[1] == '-df':
-		key = get_key()
-
-		print("Decrypting your files...")
-		decrypt(key, path, filename)
-		delete(path, filename)
-		print("Unzipping files...")
-		extract(path, os.path.splitext(filename)[0]+'.7z')
-		delete(path, os.path.splitext(filename)[0]+'.7z')
-
 
 
 	else:
